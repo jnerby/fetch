@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head>
+  <title>Rewards</title>
+</head>
+<body>
+
+  <h1>User Rewards</h1>
+  <div>
+    <form id="add-form" action="/add" method="POST">
+        <input placeholder="Payer" class="form-control" autofocus required id="payer" name="payer">
+        <input placeholder="Points" class="form-control" required name="points">
+        <button class="btn btn-outline-secondary" type="submit">Add Points</button> 
+    </form>
+</div>
+
+<div>
+    <form id="spend-form" action="/spend" method="POST">
+        <input placeholder="Points" class="form-control" required name="to-spend">
+        <button class="btn btn-outline-secondary" type="submit">Spend Points</button> 
+    </form>
+</div>
+  
+</body>
+</html>
