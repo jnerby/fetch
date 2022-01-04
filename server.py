@@ -31,59 +31,69 @@ def add_transactions():
         # store current transaction in global var
         TRANSACTIONS.append(current)
 
-        # return jsonify(TRANSACTIONS)
-        print(TRANSACTIONS)
-        return redirect('/')
+        return jsonify(TRANSACTIONS)
+
     # if method is GET, render base template
     return render_template("base.html")
 
 @app.route('/spend', methods=['GET', 'POST'])
 def spend_points():
     """Spend user's points"""
-    to_spend = int(request.form['to-spend'])
-    # print(to_spend)
-    resp = []
+    if request.method == 'POST':
+        # cast user submitted value to int
+        to_spend = int(request.form['to-spend'])
+        # initialize empty list to jsonify in response
+        resp = []
 
-    avail_points = []
+        # get positive transactions sorted from oldest to newest
+        avail_points = []
+        for transaction in TRANSACTIONS:
+            # get positive transactions
+            if transaction['points'] > 0:
+                # create tuples to sort by timestamp
+                tup = (transaction['timestamp'], transaction['points'], transaction['payer'])
+                avail_points.append(tup) 
 
-    # get positive transactions sorted from oldest to newest
-    for transaction in TRANSACTIONS:
-        # get positive transactions
-        if transaction['points'] > 0:
-            # create tuples to sort by timestamp
-            tup = (transaction['timestamp'], transaction['points'], transaction['payer'])
-            avail_points.append(tup) 
+        # sort all possible points by timestamp      
+        avail_points.sort()
 
-    # sort all possible points by timestamp      
-    avail_points.sort()
+        for transaction in avail_points:
+            if to_spend == 0:
+                break
+            points = transaction[1]
+            # if surplus points, set to spend to 0 and subtract value of to_spend
+            if to_spend < points:
+                to_deduct = to_spend
+                to_spend = 0
+            # if to_spend is greater, deduct all points and subtract points from to_spend
+            if to_spend > points:
+                to_deduct = points
+                to_spend -= points 
+            # create new transaction to subtract points
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            current = {'payer': transaction[2],
+                'points': -to_deduct,
+                'timestamp': timestamp}
+            # append point deduction to transactions   
+            TRANSACTIONS.append(current)
+            resp.append({'payer': transaction[2], 'points': -to_deduct})
 
-    for transaction in avail_points:
-        if to_spend == 0:
-            break
-        points = transaction[1]
-        # if surplus points, set to spend to 0 and subtract value of to_spend
-        if to_spend < points:
-            to_deduct = to_spend
-            to_spend = 0
-        # if to_spend is greater, deduct all points and subtract points from to_spend
-        if to_spend > points:
-            to_deduct = points
-            to_spend -= points 
-        # create new transaction to subtract points
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        current = {'payer': transaction[2],
-            'points': -to_deduct,
-            'timestamp': timestamp}
-        # append point deduction to transactions   
-        TRANSACTIONS.append(current)
-        resp.append({'payer': transaction[2], 'points': -to_deduct})
+        return jsonify(resp)
+    return redirect('/')
 
-    # print(TRANSACTIONS)
-    # print(resp)
+@app.route('/balance', methods=['POST'])
+def return_balances():
+    if request.method == 'POST':
+        balances = {}
+        for transaction in TRANSACTIONS:
+            if transaction['payer'] in balances:
+                balances[transaction['payer']] += transaction['points']
+            else:
+                balances[transaction['payer']] = transaction['points']
 
-    return jsonify(resp)
-    # return redirect('/')
-    
+        return jsonify(balances)
+    return redirect('/')
+
 
 if __name__ == "__main__":
     app.run(
