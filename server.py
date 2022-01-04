@@ -3,19 +3,14 @@
 # Return all payer point balances
 
 # Can store transactions in memory
-from flask import Flask, redirect, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request
 from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "dev"
 
 # Global variable to store transactions in memory
-# TRANSACTIONS = []
-TRANSACTIONS = [{'payer': 'Dannon', 'points': 500, 'timestamp': '2022-01-03T12:12:18Z'}, 
-                {'payer': 'Miller Coors', 'points': 500, 'timestamp': '2021-01-03T12:12:22Z'}, 
-                {'payer': 'Miller Coors', 'points': -100, 'timestamp': '2021-01-03T12:12:22Z'}, 
-                {'payer': 'Dannon', 'points': 500, 'timestamp': '2022-01-03T12:12:22Z'}, 
-                {'payer': 'Unilever', 'points': -1000, 'timestamp': '2022-01-03T12:12:27Z'}]
+TRANSACTIONS = []
 
 @app.route("/")
 def render_homepage():
@@ -36,15 +31,20 @@ def add_transactions():
         # store current transaction in global var
         TRANSACTIONS.append(current)
 
-        return redirect("/")
+        # return jsonify(TRANSACTIONS)
+        print(TRANSACTIONS)
+        return redirect('/')
+    # if method is GET, render base template
     return render_template("base.html")
 
 @app.route('/spend', methods=['GET', 'POST'])
 def spend_points():
     """Spend user's points"""
     to_spend = int(request.form['to-spend'])
+    # print(to_spend)
+    resp = []
 
-    possible_points = []
+    avail_points = []
 
     # get positive transactions sorted from oldest to newest
     for transaction in TRANSACTIONS:
@@ -52,29 +52,37 @@ def spend_points():
         if transaction['points'] > 0:
             # create tuples to sort by timestamp
             tup = (transaction['timestamp'], transaction['points'], transaction['payer'])
-            possible_points.append(tup) 
+            avail_points.append(tup) 
 
     # sort all possible points by timestamp      
-    possible_points.sort()
+    avail_points.sort()
 
-    # loop over possible points until to_spend is 0
-    while to_spend > 0:
-        for item in possible_points:
-            payer = item[2]
-            points = item[1]
-            # if item has surplus points
-            if points > to_spend:
-                # create new transaction to subtract points from payer
-                timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                current = {'payer': payer,
-                    'points': -to_spend,
-                    'timestamp': timestamp}   
-                TRANSACTIONS.append(current)
-                # set to_spend to 0
-                to_spend = 0
-                
-    print(TRANSACTIONS)
-    return redirect('/')
+    for transaction in avail_points:
+        if to_spend == 0:
+            break
+        points = transaction[1]
+        # if surplus points, set to spend to 0 and subtract value of to_spend
+        if to_spend < points:
+            to_deduct = to_spend
+            to_spend = 0
+        # if to_spend is greater, deduct all points and subtract points from to_spend
+        if to_spend > points:
+            to_deduct = points
+            to_spend -= points 
+        # create new transaction to subtract points
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        current = {'payer': transaction[2],
+            'points': -to_deduct,
+            'timestamp': timestamp}
+        # append point deduction to transactions   
+        TRANSACTIONS.append(current)
+        resp.append({'payer': transaction[2], 'points': -to_deduct})
+
+    # print(TRANSACTIONS)
+    # print(resp)
+
+    return jsonify(resp)
+    # return redirect('/')
     
 
 if __name__ == "__main__":
