@@ -4,6 +4,11 @@
   <title>Rewards</title>
 </head>
 <body>
+  {% for message in get_flashed_messages() %}
+  <div class=flashes>
+    <p>{{ message }}</p>
+  </div>
+  {% endfor %}
 
   <h1>User Rewards</h1>
 
