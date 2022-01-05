@@ -1,8 +1,3 @@
-# Add transactions for a specific payer and date
-# Spend points and return list of { "payer": <string>, "points": <integer> }
-# Return all payer point balances
-
-# Can store transactions in memory
 from flask import Flask, jsonify, redirect, render_template, request
 from datetime import datetime
 
@@ -16,6 +11,7 @@ TRANSACTIONS = []
 def render_homepage():
     """Render homepage template"""
     return render_template("base.html")
+
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_transactions():
@@ -36,7 +32,8 @@ def add_transactions():
     # if method is GET, render base template
     return render_template("base.html")
 
-@app.route('/spend', methods=['GET', 'POST'])
+
+@app.route('/spend', methods=['POST'])
 def spend_points():
     """Spend user's points"""
     if request.method == 'POST':
@@ -61,11 +58,11 @@ def spend_points():
             if to_spend == 0:
                 break
             points = transaction[1]
-            # if surplus points, set to spend to 0 and subtract value of to_spend
+            # if transaction has surplus points, set to spend to 0 and subtract value of to_spend
             if to_spend < points:
                 to_deduct = to_spend
                 to_spend = 0
-            # if to_spend is greater, deduct all points and subtract points from to_spend
+            # if to_spend exceeds transaction's points, deduct all points and subtract points from to_spend
             if to_spend > points:
                 to_deduct = points
                 to_spend -= points 
@@ -74,17 +71,22 @@ def spend_points():
             current = {'payer': transaction[2],
                 'points': -to_deduct,
                 'timestamp': timestamp}
-            # append point deduction to transactions   
+            # update transactions to include point deduction  
             TRANSACTIONS.append(current)
             resp.append({'payer': transaction[2], 'points': -to_deduct})
 
         return jsonify(resp)
+
+    # if method is GET, redirect to base
     return redirect('/')
+
 
 @app.route('/balance', methods=['POST'])
 def return_balances():
     if request.method == 'POST':
+        # init empty dict to store balances
         balances = {}
+        # loop through all transactions to calc balance per payer
         for transaction in TRANSACTIONS:
             if transaction['payer'] in balances:
                 balances[transaction['payer']] += transaction['points']
@@ -92,6 +94,8 @@ def return_balances():
                 balances[transaction['payer']] = transaction['points']
 
         return jsonify(balances)
+
+    # if method is GET, redirect to base 
     return redirect('/')
 
 
