@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, redirect, render_template, request
 from datetime import datetime
 
@@ -100,8 +101,5 @@ def return_balances():
 
 
 if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        use_reloader=True,
-        use_debugger=True,
-    )
+    app.run(host=os.getenv('IP', '0.0.0.0'),
+    port=int(os.getenv('PORT', 4444)))
