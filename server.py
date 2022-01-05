@@ -41,7 +41,6 @@ def spend_points():
         # cast user submitted value to int
         to_spend = int(request.form['to-spend'])
         # initialize empty list to jsonify in response
-        # resp = []
         res = {}
 
         avail_points = []
@@ -53,6 +52,7 @@ def spend_points():
             tup = (transaction['timestamp'], transaction['points'], transaction['payer'])
             avail_points.append(tup) 
             total_points += transaction['points']
+
 
         # if user has enough points, start spending
         if to_spend <= total_points:
@@ -66,30 +66,40 @@ def spend_points():
                 
                 points = tup[1]
                 payer = tup[2]
-                # if transaction has surplus points, set to spend to 0 and subtract value of to_spend
-                if to_spend <= points:
-                    to_deduct = to_spend
-                    to_spend = 0
-                # if to_spend exceeds transaction's points, deduct all points and subtract points from to_spend
-                if to_spend > points:
-                    to_deduct = points
-                    to_spend -= points 
+                
+                ##### CHECK THAT PAYER BALANCE WON'T GET NEGATIVE
+                balances_by_payer = get_balances()
+                if balances_by_payer[payer] != 0:
+                        
 
-                # create new transaction to subtract points
-                timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                current = {'payer': tup[2],
-                    'points': -to_deduct,
-                    'timestamp': timestamp}
-                # update transactions to include point deduction  
-                TRANSACTIONS.append(current)
+                    # if transaction is negative, increase to_spend 
+                    if points < 0:
+                        to_deduct = points * -1
+                        to_spend += points * -1
+                    # if transaction has surplus points, set to spend to 0 and subtract value of to_spend
+                    elif to_spend <= points:
+                        to_deduct = -to_spend
+                        to_spend = 0
+                    # if to_spend exceeds transaction's points, deduct all points and subtract points from to_spend
+                    elif to_spend > points:
+                        to_deduct = -points
+                        to_spend -= points 
 
-                if payer in res:
-                    res[payer] -= to_deduct
-                else:
-                    res[payer] = -to_deduct
+                    # create new transaction to subtract points
+                    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                    current = {'payer': payer,
+                        'points': to_deduct,
+                        'timestamp': timestamp}
+                    # update transactions to include point deduction  
+                    TRANSACTIONS.append(current)
+
+                    # add to response
+                    if payer in res:
+                        res[payer] += to_deduct
+                    else:
+                        res[payer] = to_deduct
 
             return jsonify(res)
-            # return jsonify(resp)
 
         # if user does not have enough points, notify
         else:
@@ -99,20 +109,31 @@ def spend_points():
     # if method is GET, redirect to base
     return redirect('/')
 
+def get_balances():
+    # init empty dict to store balances
+    balances = {}
+    # loop through all transactions to calc balance per payer
+    for transaction in TRANSACTIONS:
+        if transaction['payer'] in balances:
+            balances[transaction['payer']] += transaction['points']
+        else:
+            balances[transaction['payer']] = transaction['points']
+
+    return balances
 
 @app.route('/balance', methods=['POST'])
 def return_balances():
     if request.method == 'POST':
-        # init empty dict to store balances
-        balances = {}
-        # loop through all transactions to calc balance per payer
-        for transaction in TRANSACTIONS:
-            if transaction['payer'] in balances:
-                balances[transaction['payer']] += transaction['points']
-            else:
-                balances[transaction['payer']] = transaction['points']
+        # # init empty dict to store balances
+        # balances = {}
+        # # loop through all transactions to calc balance per payer
+        # for transaction in TRANSACTIONS:
+        #     if transaction['payer'] in balances:
+        #         balances[transaction['payer']] += transaction['points']
+        #     else:
+        #         balances[transaction['payer']] = transaction['points']
 
-        return jsonify(balances)
+        return jsonify(get_balances())
 
     # if method is GET, redirect to base 
     return redirect('/')
