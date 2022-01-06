@@ -13,6 +13,7 @@
   <h1>User Rewards</h1>
 
   <div>
+    <h4>Add Transaction</h4>
     <form id="add-form" action="/add" method="POST">
         <input placeholder="Payer" class="form-control" autofocus required id="payer" name="payer">
         <input placeholder="Points" class="form-control" required name="points">
@@ -21,6 +22,7 @@
   </div>
 
   <div>
+    <h4>Spend Points</h4>
     <form id="spend-form" action="/spend" method="POST">
         <input placeholder="Points" class="form-control" required name="to-spend">
         <button class="btn btn-outline-secondary" type="submit">Spend Points</button> 
@@ -28,6 +30,7 @@
   </div>
 
   <div>
+    <h4>View Balance by Payer</h4>
     <form id="balance-form" action="/balance" method="POST">
       <button class="btn btn-outline-secondary" type="submit">View Balances</button> 
     </form>
