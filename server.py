@@ -14,7 +14,7 @@ def render_homepage():
     return render_template("base.html")
 
 def get_balances():
-    """"Helper function to get each payer's balance"""
+    """Helper function to get each payer's balance"""
     # init empty dict to store balances
     balances = {}
     # loop through all transactions to calc balance per payer
