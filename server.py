@@ -13,6 +13,18 @@ def render_homepage():
     """Render homepage template"""
     return render_template("base.html")
 
+def get_balances():
+    """"Helper function to get each payer's balance"""
+    # init empty dict to store balances
+    balances = {}
+    # loop through all transactions to calc balance per payer
+    for transaction in TRANSACTIONS:
+        if transaction['payer'] in balances:
+            balances[transaction['payer']] += transaction['points']
+        else:
+            balances[transaction['payer']] = transaction['points']
+
+    return balances
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_transactions():
@@ -67,11 +79,10 @@ def spend_points():
                 points = tup[1]
                 payer = tup[2]
                 
-                ##### CHECK THAT PAYER BALANCE WON'T GET NEGATIVE
+                #check that payer has sufficient funds
                 balances_by_payer = get_balances()
-                if balances_by_payer[payer] != 0:
+                if balances_by_payer[payer] > 0:
                         
-
                     # if transaction is negative, increase to_spend 
                     if points < 0:
                         to_deduct = points * -1
@@ -109,29 +120,11 @@ def spend_points():
     # if method is GET, redirect to base
     return redirect('/')
 
-def get_balances():
-    # init empty dict to store balances
-    balances = {}
-    # loop through all transactions to calc balance per payer
-    for transaction in TRANSACTIONS:
-        if transaction['payer'] in balances:
-            balances[transaction['payer']] += transaction['points']
-        else:
-            balances[transaction['payer']] = transaction['points']
-
-    return balances
 
 @app.route('/balance', methods=['POST'])
 def return_balances():
+    """Route to return each payer's point balance"""
     if request.method == 'POST':
-        # # init empty dict to store balances
-        # balances = {}
-        # # loop through all transactions to calc balance per payer
-        # for transaction in TRANSACTIONS:
-        #     if transaction['payer'] in balances:
-        #         balances[transaction['payer']] += transaction['points']
-        #     else:
-        #         balances[transaction['payer']] = transaction['points']
 
         return jsonify(get_balances())
 
